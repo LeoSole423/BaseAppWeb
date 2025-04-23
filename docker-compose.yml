@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5000"
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_DB=appdb
+      - JWT_SECRET_KEY=mi_clave_secreta_para_produccion_cambiar_en_prod
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=appdb
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge 
