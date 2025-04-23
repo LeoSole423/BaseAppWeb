@@ -40,27 +40,53 @@ def check_db_connection():
     return False
 
 def init_db():
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Crear tabla de usuarios si no existe
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS usuarios (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL,
-                email VARCHAR(100) UNIQUE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    # Intentar conectar con reintentos
+    max_retries = 10
+    retry_interval = 5  # segundos
+    
+    for attempt in range(max_retries):
+        try:
+            # Intentar crear la base de datos si no existe
+            conn = mysql.connector.connect(
+                host=db_config['host'],
+                user=db_config['user'],
+                password=db_config['password']
             )
-        ''')
-        
-        conn.commit()
-        cursor.close()
-        conn.close()
-        print("Base de datos inicializada correctamente")
-    except Exception as e:
-        print(f"Error al inicializar la base de datos: {e}")
+            
+            cursor = conn.cursor()
+            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_config['database']}")
+            cursor.close()
+            conn.close()
+            
+            # Ahora intentar conectarse a la base de datos
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            # Crear tabla de usuarios si no existe
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    email VARCHAR(100) UNIQUE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print("Base de datos inicializada correctamente")
+            return True
+        except Exception as e:
+            print(f"Intento {attempt+1}/{max_retries}: Error al inicializar la base de datos: {e}")
+            if attempt < max_retries - 1:
+                print(f"Reintentando en {retry_interval} segundos...")
+                import time
+                time.sleep(retry_interval)
+            else:
+                print("Se alcanzó el número máximo de reintentos. No se pudo inicializar la base de datos.")
+                return False
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -84,6 +110,10 @@ def register():
         # Validación básica
         if not username or not password or not email:
             return jsonify({"error": "Todos los campos son obligatorios"}), 400
+        
+        # Verificar conexión a la base de datos
+        if not check_db_connection():
+            return jsonify({"error": "No se puede conectar a la base de datos. Por favor, inténtelo más tarde."}), 503
         
         # Encriptar contraseña
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')

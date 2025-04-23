@@ -92,9 +92,10 @@ function App() {
         body: JSON.stringify({ username, email, password })
       })
 
+      const data = await response.json()
+      
       if (!response.ok) {
-        const data = await response.json()
-        setError(data.message || 'Error al registrar usuario')
+        setError(data.error || 'Error al registrar usuario')
         return false
       }
 
@@ -103,7 +104,7 @@ function App() {
       return true
     } catch (error) {
       console.error("Error durante el registro:", error)
-      setError(error instanceof Error ? error.message : 'Error desconocido')
+      setError(error instanceof Error ? error.message : 'Error al registrar usuario')
       return false
     }
   }

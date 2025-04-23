@@ -2,6 +2,14 @@
 
 Este proyecto es una aplicación web con sistema de autenticación completa (registro e inicio de sesión), desarrollado con React (frontend) y Flask (backend), utilizando MySQL como base de datos. Toda la aplicación está dockerizada para facilitar su despliegue e implementa un tema oscuro para mejor experiencia de usuario.
 
+## Características de Robustez Implementadas
+
+- **Reintentos de Conexión**: El sistema intenta conectarse a la base de datos hasta 10 veces antes de fallar completamente
+- **Creación Automática de Base de Datos**: Si la base de datos no existe, el sistema la crea automáticamente
+- **Manejo Inteligente de Errores**: Mensajes claros y específicos según el tipo de error encontrado
+- **Validación de Conexión**: Verificación previa de conexión antes de realizar operaciones en la base de datos
+- **Respuestas HTTP Adecuadas**: Uso de códigos HTTP apropiados para cada situación (503 para servicios no disponibles, 409 para conflictos, etc.)
+
 ## Estructura del Proyecto
 
 ```
@@ -71,6 +79,18 @@ Este comando construirá las imágenes necesarias y luego iniciará:
 - La aplicación frontend en http://localhost:3000
 - La base de datos MySQL en el puerto 3306
 
+## Secuencia de Inicio
+
+Al ejecutar el comando anterior:
+
+1. Se iniciará primero la base de datos MySQL
+2. El backend esperará a que MySQL esté disponible (realizando hasta 10 reintentos)
+3. Se creará automáticamente la base de datos si no existe
+4. Se inicializarán las tablas necesarias
+5. El frontend se conectará al backend una vez que esté listo
+
+Esta secuencia asegura una inicialización correcta incluso en la primera ejecución.
+
 ## Acceso a la Aplicación Web
 
 Una vez que los contenedores estén en funcionamiento:
@@ -99,6 +119,15 @@ Una vez que los contenedores estén en funcionamiento:
 - **Backend**: API REST desarrollada con Flask
 - **Base de datos**: MySQL para almacenamiento persistente
 
+## Manejo de Errores
+
+La aplicación implementa un sistema robusto de manejo de errores:
+
+- **Errores de Conexión**: Muestra mensajes apropiados y reintentos
+- **Errores de Duplicidad**: Informa cuando un usuario o correo ya existen
+- **Errores de Autenticación**: Respuestas claras para credenciales inválidas
+- **Errores de Servidor**: Tratamiento adecuado para problemas internos
+
 ## Variables de Entorno
 
 ### Backend (configuradas en docker-compose.yml)
@@ -115,4 +144,5 @@ Una vez que los contenedores estén en funcionamiento:
 
 - POST /api/register - Registro de nuevos usuarios
 - POST /api/login - Inicio de sesión y obtención de token JWT
-- GET /api/user - Obtener información del usuario autenticado (requiere token JWT) 
+- GET /api/user - Obtener información del usuario autenticado (requiere token JWT)
+- GET /api/health - Verificar el estado de los servicios (backend y base de datos) 
